@@ -1,0 +1,20 @@
+{
+  "name": "miko-fireworks-explainer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portable Agent Skill for grounded, interactive visual explanations.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test scripts/test.mjs",
+    "validate:agent-memory": "node scripts/validate.mjs assets/examples/agent-memory.json",
+    "validate:opensandbox": "node scripts/validate.mjs assets/examples/opensandbox.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snowan/miko-fireworks-explainer.git"
+  },
+  "license": "MIT"
+}

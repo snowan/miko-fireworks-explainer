@@ -1,0 +1,500 @@
+{
+  "version": 2,
+  "title": "OpenSandbox: Give an AI Agent a Safe Workshop",
+  "summary": "Follow one request to run python main.py from an agent, through OpenSandbox, into an isolated runtime, and back as streamed output.",
+  "audience": "curious developer who is new to sandbox infrastructure",
+  "style": "minimal",
+  "traveler": {
+    "name": "python-job",
+    "label": "run python main.py"
+  },
+  "truthLadder": {
+    "analogy": "OpenSandbox is like a workshop manager: it prepares a separate workroom, hands the job through a controlled door, and closes the room when the booking ends.",
+    "mechanism": "OpenSandbox combines SDKs, CLI and MCP entry points, public API contracts, a lifecycle control plane, Docker or Kubernetes runtime backends, and an in-sandbox execd daemon for commands, files, code, metrics, and streamed output.",
+    "caveat": "OpenSandbox is not a magic security boundary by itself. Actual isolation depends on the configured runtime, network policy, credentials, volumes, resource limits, and operator choices; standard runc is not the same protection as gVisor, Kata, or Firecracker-backed isolation."
+  },
+  "overview": {
+    "id": "opensandbox-journey",
+    "title": "One command's whole journey",
+    "caption": "The run python main.py request crosses six stages; click any stage to jump to Koko's question.",
+    "type": "flow",
+    "nodes": [
+      {"id": "stage-need", "sceneId": "why-sandbox", "label": "Risky job", "detail": "An agent wants to run code"},
+      {"id": "stage-model", "sceneId": "not-just-docker", "label": "Common API", "detail": "One contract, several runtimes"},
+      {"id": "stage-create", "sceneId": "create-sandbox", "label": "Create room", "detail": "Control plane provisions it"},
+      {"id": "stage-exec", "sceneId": "run-command", "label": "Run command", "detail": "execd handles the job"},
+      {"id": "stage-guard", "sceneId": "security-boundary", "label": "Guard edges", "detail": "Runtime and policy contain it"},
+      {"id": "stage-end", "sceneId": "lifecycle-data", "label": "End or keep", "detail": "Clean up or persist deliberately"}
+    ],
+    "edges": [
+      {"from": "stage-need", "to": "stage-model", "label": "submit"},
+      {"from": "stage-model", "to": "stage-create", "label": "create"},
+      {"from": "stage-create", "to": "stage-exec", "label": "ready"},
+      {"from": "stage-exec", "to": "stage-guard", "label": "contain"},
+      {"from": "stage-guard", "to": "stage-end", "label": "finish"}
+    ]
+  },
+  "scenes": [
+    {
+      "id": "why-sandbox",
+      "title": "A separate place for risky work",
+      "question": "Why give an AI agent a sandbox at all?",
+      "simpleAnswer": "Because generated code should get its own workroom instead of free access to your main machine.",
+      "technicalAnswer": "OpenSandbox gives applications a uniform way to create time- and resource-bounded environments, run commands or code, move files, expose services, and then terminate the environment.",
+      "caveat": "A sandbox reduces blast radius; it does not make arbitrary code harmless or replace careful configuration and monitoring.",
+      "takeaway": "Put risky execution behind a deliberate boundary.",
+      "visuals": [
+        {
+          "id": "job-to-room",
+          "title": "The safe-workshop idea",
+          "caption": "Follow the loop clockwise: the request moves into the isolated runtime, then the result returns to the application.",
+          "type": "cycle",
+          "nodes": [
+            {"id": "agent", "label": "AI application", "detail": "Wants to run python main.py"},
+            {"id": "opensandbox", "label": "OpenSandbox", "detail": "Creates and manages a separate environment"},
+            {"id": "sandbox", "label": "Isolated sandbox", "detail": "Runs the untrusted workload"},
+            {"id": "result", "label": "Result stream", "detail": "stdout, stderr, status, or files"}
+          ],
+          "edges": [
+            {"from": "agent", "to": "opensandbox", "label": "request"},
+            {"from": "opensandbox", "to": "sandbox", "label": "place job"},
+            {"from": "sandbox", "to": "result", "label": "produce"},
+            {"from": "result", "to": "agent", "label": "return"}
+          ],
+          "activeNodeIds": ["opensandbox", "sandbox"]
+        },
+        {
+          "id": "direct-versus-sandboxed",
+          "title": "Choose where the command runs",
+          "caption": "One request branches into two execution paths. The OpenSandbox path moves the workload behind a separately configured boundary.",
+          "type": "flow",
+          "nodes": [
+            {"id": "job", "label": "run python main.py", "detail": "The application needs to execute generated code"},
+            {"id": "choice", "label": "Choose execution path", "detail": "Decide which environment receives the workload"},
+            {"id": "direct", "label": "Caller environment", "detail": "Direct execution inherits the caller's workspace, permissions, and network"},
+            {"id": "managed", "label": "OpenSandbox boundary", "detail": "Sandboxed execution uses a separately provisioned runtime with explicit policy"}
+          ],
+          "edges": [
+            {"from": "job", "to": "choice", "label": "submit"},
+            {"from": "choice", "to": "direct", "label": "run directly"},
+            {"from": "choice", "to": "managed", "label": "sandbox it"}
+          ],
+          "activeNodeIds": ["managed"]
+        }
+      ],
+      "evidenceIds": ["repo-overview", "architecture-overview", "workshop-analogy"]
+    },
+    {
+      "id": "not-just-docker",
+      "title": "The manager is not the room",
+      "question": "Is OpenSandbox just Docker with a nicer name?",
+      "simpleAnswer": "No. Docker can be one kind of room; OpenSandbox is the common desk that knows how to manage rooms.",
+      "technicalAnswer": "OpenSandbox defines runtime-neutral APIs and clients, while its lifecycle server selects one backend implementation: Docker for local or single-host use, or Kubernetes through a supported workload provider.",
+      "caveat": "The shared API hides many platform details, but Docker and Kubernetes still differ in endpoint routing, storage, pause/resume behavior, and deployment complexity.",
+      "takeaway": "OpenSandbox is a protocol and control layer over runtime backends.",
+      "visuals": [
+        {
+          "id": "control-and-runtime-layers",
+          "title": "One contract, runtime-specific execution",
+          "caption": "Clients depend on the public contract; the server delegates platform work to one selected runtime backend.",
+          "type": "layers",
+          "nodes": [
+            {"id": "clients", "label": "SDK · CLI · MCP", "detail": "Developer-facing entry points"},
+            {"id": "protocol", "label": "OpenAPI contracts", "detail": "Lifecycle, execd, diagnostics, egress"},
+            {"id": "server", "label": "Lifecycle server", "detail": "Validate, authenticate, orchestrate"},
+            {"id": "runtime", "label": "Runtime service", "detail": "Exactly one backend is selected"},
+            {"id": "workload", "label": "Sandbox data plane", "detail": "User image plus injected control components"}
+          ],
+          "edges": [
+            {"from": "clients", "to": "protocol", "label": "use contract"},
+            {"from": "protocol", "to": "server", "label": "define requests"},
+            {"from": "server", "to": "runtime", "label": "delegate"},
+            {"from": "runtime", "to": "workload", "label": "provision"}
+          ],
+          "activeNodeIds": ["server", "runtime"]
+        },
+        {
+          "id": "backend-choice",
+          "title": "Two built-in runtime paths",
+          "caption": "Both paths serve the same lifecycle API while creating different platform resources.",
+          "type": "comparison",
+          "comparisonDimension": "runtime backend and platform behavior",
+          "nodes": [
+            {"id": "docker", "label": "Docker backend", "detail": "Local or single-host containers, mapped ports, Docker volumes"},
+            {"id": "kubernetes", "label": "Kubernetes backend", "detail": "Cluster workloads via BatchSandbox or agent-sandbox providers"}
+          ],
+          "edges": [],
+          "activeNodeIds": ["docker", "kubernetes"]
+        }
+      ],
+      "evidenceIds": ["architecture-overview", "runtime-selection"]
+    },
+    {
+      "id": "create-sandbox",
+      "title": "Creating the workroom",
+      "question": "How does a new sandbox actually appear?",
+      "simpleAnswer": "The client asks; the server checks the request; a runtime builds the room and reports when it is ready.",
+      "technicalAnswer": "A create call reaches POST /v1/sandboxes. The FastAPI lifecycle server validates it, delegates to Docker or Kubernetes, stages execd plus optional volume and egress configuration, and exposes an asynchronous state that clients poll until Running or Failed.",
+      "caveat": "Create is asynchronous. Receiving a sandbox ID is not proof that the workload is already ready.",
+      "takeaway": "Creation is an orchestrated state transition, not an instant function call.",
+      "visuals": [
+        {
+          "id": "creation-sequence",
+          "title": "Who creates what",
+          "caption": "The traveler becomes a runnable job only after the runtime has created the workload and staged OpenSandbox's in-sandbox controls.",
+          "type": "sequence",
+          "nodes": [
+            {"id": "client", "label": "Client", "detail": "SDK, CLI, MCP, or direct API"},
+            {"id": "lifecycle", "label": "Lifecycle server", "detail": "Authenticate and validate"},
+            {"id": "backend", "label": "Runtime backend", "detail": "Docker or Kubernetes"},
+            {"id": "room", "label": "Sandbox workload", "detail": "User image, execd, policy, volumes"}
+          ],
+          "edges": [
+            {"from": "client", "to": "lifecycle", "label": "POST /v1/sandboxes"},
+            {"from": "lifecycle", "to": "backend", "label": "create"},
+            {"from": "backend", "to": "room", "label": "provision + stage"},
+            {"from": "room", "to": "client", "label": "Running or Failed"}
+          ],
+          "activeNodeIds": ["backend", "room"]
+        },
+        {
+          "id": "readiness-path",
+          "title": "A sandbox ID is not readiness",
+          "caption": "The simplified path highlights the required readiness check; the lifecycle API also exposes intermediate and failure states.",
+          "type": "timeline",
+          "nodes": [
+            {"id": "accepted", "label": "Request accepted", "detail": "A sandbox record and ID exist"},
+            {"id": "pending", "label": "Pending", "detail": "Runtime work is still happening"},
+            {"id": "running", "label": "Running", "detail": "Readiness helper or polling succeeds"},
+            {"id": "failed", "label": "Failed", "detail": "Inspect reason, message, and diagnostics"}
+          ],
+          "edges": [
+            {"from": "accepted", "to": "pending", "label": "provision"},
+            {"from": "pending", "to": "running", "label": "ready"},
+            {"from": "pending", "to": "failed", "label": "error"}
+          ],
+          "activeNodeIds": ["pending"]
+        }
+      ],
+      "evidenceIds": ["creation-flow", "lifecycle-api"]
+    },
+    {
+      "id": "run-command",
+      "title": "The controlled door inside",
+      "question": "How does python main.py run inside?",
+      "simpleAnswer": "The client finds a controlled door called execd, sends the command through it, and receives live output.",
+      "technicalAnswer": "The client resolves execd's sandbox endpoint or uses the server proxy, authenticates when required, then calls execd. Execd starts the process and streams status, stdout, stderr, results, and completion events over SSE; interactive PTY sessions use WebSockets.",
+      "caveat": "The lifecycle server creates and locates sandboxes; execd owns operations inside the sandbox. Mixing those roles makes the architecture harder to secure and debug.",
+      "takeaway": "The control plane finds the room; execd does the work inside it.",
+      "visuals": [
+        {
+          "id": "command-sequence",
+          "title": "One command, end to end",
+          "caption": "The run python main.py traveler enters through execd and returns as structured streaming events.",
+          "type": "sequence",
+          "nodes": [
+            {"id": "caller", "label": "Client", "detail": "Holds the command request"},
+            {"id": "resolver", "label": "Endpoint resolver", "detail": "Direct address or server proxy"},
+            {"id": "execd", "label": "execd", "detail": "In-sandbox execution daemon"},
+            {"id": "process", "label": "Python process", "detail": "Runs inside the sandbox"},
+            {"id": "stream", "label": "SSE output", "detail": "status, stdout, stderr, complete"}
+          ],
+          "edges": [
+            {"from": "caller", "to": "resolver", "label": "resolve execd"},
+            {"from": "resolver", "to": "execd", "label": "POST /command"},
+            {"from": "execd", "to": "process", "label": "start"},
+            {"from": "process", "to": "stream", "label": "emit"},
+            {"from": "stream", "to": "caller", "label": "stream back"}
+          ],
+          "activeNodeIds": ["execd", "process"]
+        },
+        {
+          "id": "execd-capabilities",
+          "title": "execd is more than a shell endpoint",
+          "caption": "The same in-sandbox daemon exposes several operation families while the lifecycle API stays separate.",
+          "type": "graph",
+          "nodes": [
+            {"id": "execd-hub", "label": "execd", "detail": "Runs inside the sandbox"},
+            {"id": "commands", "label": "Commands", "detail": "Foreground, background, sessions, PTY"},
+            {"id": "files", "label": "Files", "detail": "Upload, download, search, move, permissions"},
+            {"id": "code", "label": "Code contexts", "detail": "Optional Jupyter-backed execution"},
+            {"id": "metrics", "label": "Metrics", "detail": "CPU and memory observation"}
+          ],
+          "edges": [
+            {"from": "execd-hub", "to": "commands", "label": "execute"},
+            {"from": "execd-hub", "to": "files", "label": "manage"},
+            {"from": "execd-hub", "to": "code", "label": "interpret"},
+            {"from": "execd-hub", "to": "metrics", "label": "observe"}
+          ],
+          "activeNodeIds": ["execd-hub", "commands"]
+        }
+      ],
+      "evidenceIds": ["execution-flow", "execd-api"]
+    },
+    {
+      "id": "security-boundary",
+      "title": "Several guards, not one magic wall",
+      "question": "What stops the code from wandering everywhere?",
+      "simpleAnswer": "Several guards work together: the runtime boundary, resource limits, network rules, endpoint access, and careful credentials.",
+      "technicalAnswer": "The runtime can apply container or stronger secure-runtime isolation; OpenSandbox can add resource limits, capability and policy controls, an egress sidecar, ingress routing with secure endpoint headers, and Credential Vault-based outbound credential injection.",
+      "caveat": "These protections are deployment choices. The default runc path is useful for trusted local development but is not equivalent to a user-space kernel or VM-backed runtime for hostile multi-tenant code.",
+      "takeaway": "Security is a configured stack of boundaries.",
+      "visuals": [
+        {
+          "id": "security-layers",
+          "title": "Defense in layers",
+          "caption": "Each layer limits a different path; removing one changes the threat model rather than merely changing a label.",
+          "type": "layers",
+          "nodes": [
+            {"id": "operator", "label": "Operator policy", "detail": "Auth, limits, runtime choice, allowed mounts"},
+            {"id": "runtime-wall", "label": "Runtime boundary", "detail": "runc, gVisor, Kata, or Firecracker-backed"},
+            {"id": "namespace", "label": "Sandbox namespace", "detail": "Workload process and filesystem view"},
+            {"id": "network", "label": "Ingress · egress", "detail": "Control inbound routes and outbound destinations"},
+            {"id": "secrets", "label": "Credential path", "detail": "Avoid exposing real secrets to the workload"}
+          ],
+          "edges": [
+            {"from": "operator", "to": "runtime-wall", "label": "sets boundary"},
+            {"from": "runtime-wall", "to": "namespace", "label": "isolates"},
+            {"from": "namespace", "to": "network", "label": "routes through"},
+            {"from": "network", "to": "secrets", "label": "protects access"}
+          ],
+          "activeNodeIds": ["runtime-wall", "network"]
+        },
+        {
+          "id": "runtime-strength",
+          "title": "Runtime names imply different boundaries",
+          "caption": "This is a qualitative mechanism comparison, not a universal performance ranking.",
+          "type": "comparison",
+          "comparisonDimension": "isolation mechanism and intended threat boundary",
+          "nodes": [
+            {"id": "runc", "label": "runc", "detail": "Standard container process isolation; suited to trusted local work"},
+            {"id": "gvisor", "label": "gVisor", "detail": "Adds a user-space kernel and syscall interception"},
+            {"id": "kata", "label": "Kata · Firecracker", "detail": "Uses VM or microVM-backed isolation when configured"}
+          ],
+          "edges": [],
+          "activeNodeIds": ["gvisor", "kata"]
+        },
+        {
+          "id": "egress-route",
+          "title": "Outbound traffic has its own gate",
+          "caption": "When networkPolicy is requested and the deployment supports it, an egress sidecar filters sandbox outbound traffic.",
+          "type": "flow",
+          "nodes": [
+            {"id": "workload-net", "label": "Sandbox workload", "detail": "Wants to reach an external host"},
+            {"id": "egress", "label": "Egress sidecar", "detail": "Apply allow and deny policy"},
+            {"id": "allowed-host", "label": "Allowed destination", "detail": "Traffic may continue"},
+            {"id": "blocked-host", "label": "Denied destination", "detail": "Traffic is stopped"}
+          ],
+          "edges": [
+            {"from": "workload-net", "to": "egress", "label": "outbound request"},
+            {"from": "egress", "to": "allowed-host", "label": "allow"},
+            {"from": "egress", "to": "blocked-host", "label": "deny"}
+          ],
+          "activeNodeIds": ["egress"]
+        }
+      ],
+      "evidenceIds": ["security-architecture", "secure-runtime-guide", "egress-architecture"]
+    },
+    {
+      "id": "lifecycle-data",
+      "title": "End the room; keep only what you mean to keep",
+      "question": "What ends, and what can survive?",
+      "simpleAnswer": "The workroom can pause, resume, expire, or be deleted; durable data survives only through an intentional storage path.",
+      "technicalAnswer": "The lifecycle API exposes Pending, Running, pause/resume transitions, stopping and terminal states, plus Failed. Volumes use runtime-neutral models, while snapshots and pause/resume semantics differ between Docker and Kubernetes implementations.",
+      "caveat": "Do not assume a paused sandbox, deleted sandbox, mounted volume, and snapshot mean the same thing. Docker and Kubernetes materialize persistence and recovery differently.",
+      "takeaway": "Treat cleanup and persistence as explicit lifecycle decisions.",
+      "visuals": [
+        {
+          "id": "lifecycle-cycle",
+          "title": "The useful lifecycle loop",
+          "caption": "The simplified loop shows the main decisions; the API includes intermediate Pausing and Stopping states as well.",
+          "type": "cycle",
+          "nodes": [
+            {"id": "pending-life", "label": "Pending", "detail": "Being provisioned"},
+            {"id": "running-life", "label": "Running", "detail": "Accepts work"},
+            {"id": "paused-life", "label": "Paused", "detail": "Can return to Running"},
+            {"id": "terminated-life", "label": "Terminated", "detail": "Deleted or expired"},
+            {"id": "failed-life", "label": "Failed", "detail": "Inspect reason and diagnostics"}
+          ],
+          "edges": [
+            {"from": "pending-life", "to": "running-life", "label": "ready"},
+            {"from": "pending-life", "to": "failed-life", "label": "error"},
+            {"from": "running-life", "to": "paused-life", "label": "pause"},
+            {"from": "paused-life", "to": "running-life", "label": "resume"},
+            {"from": "running-life", "to": "terminated-life", "label": "delete or expire"}
+          ],
+          "activeNodeIds": ["running-life"]
+        },
+        {
+          "id": "persistence-choices",
+          "title": "Three different meanings of keep",
+          "caption": "Persistence is deliberate and runtime-specific; a mounted volume, a snapshot, and a live sandbox are not interchangeable.",
+          "type": "comparison",
+          "comparisonDimension": "what survives and how it can be restored",
+          "nodes": [
+            {"id": "rootfs", "label": "Live sandbox rootfs", "detail": "Working state attached to the current sandbox lifecycle"},
+            {"id": "volume", "label": "Mounted volume", "detail": "External named or platform-managed storage"},
+            {"id": "snapshot", "label": "Snapshot", "detail": "Restorable image path where the runtime implements it"}
+          ],
+          "edges": [],
+          "activeNodeIds": ["volume", "snapshot"]
+        },
+        {
+          "id": "use-case-graph",
+          "title": "What the same platform can host",
+          "caption": "The repository documents these as use cases and examples, not as claims that every deployment enables every feature automatically.",
+          "type": "graph",
+          "nodes": [
+            {"id": "platform", "label": "OpenSandbox", "detail": "Common lifecycle and execution platform"},
+            {"id": "coding-agent", "label": "Coding agents", "detail": "Run agent CLIs and generated code"},
+            {"id": "browser", "label": "Browser · desktop", "detail": "Chrome, Playwright, VNC, VS Code"},
+            {"id": "evaluation", "label": "Evaluation · RL", "detail": "Isolated trial workloads"},
+            {"id": "interpreter", "label": "Code interpreter", "detail": "Stateful language execution"}
+          ],
+          "edges": [
+            {"from": "platform", "to": "coding-agent", "label": "host"},
+            {"from": "platform", "to": "browser", "label": "host"},
+            {"from": "platform", "to": "evaluation", "label": "schedule"},
+            {"from": "platform", "to": "interpreter", "label": "execute"}
+          ],
+          "activeNodeIds": ["platform"]
+        }
+      ],
+      "evidenceIds": ["lifecycle-api", "persistence-architecture", "repo-examples"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "repo-overview",
+      "status": "verified",
+      "label": "OpenSandbox repository overview",
+      "note": "The official README describes the platform, SDK/CLI/MCP surfaces, Docker and Kubernetes runtimes, execution environments, network controls, and secure-runtime options.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox"
+    },
+    {
+      "id": "architecture-overview",
+      "status": "verified",
+      "label": "Official architecture overview",
+      "note": "The official architecture document defines the client, protocol, lifecycle control-plane, runtime, data-plane, and network/security surfaces and their boundaries.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md"
+    },
+    {
+      "id": "runtime-selection",
+      "status": "verified",
+      "label": "Runtime service selection",
+      "note": "The lifecycle server selects exactly one SandboxService implementation: Docker or Kubernetes.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md#32-runtime-service-selection"
+    },
+    {
+      "id": "creation-flow",
+      "status": "verified",
+      "label": "Sandbox creation flow",
+      "note": "The official core flow shows create request, lifecycle validation, runtime provisioning, execd staging, and asynchronous Running or Failed readiness.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md#71-sandbox-creation"
+    },
+    {
+      "id": "lifecycle-api",
+      "status": "verified",
+      "label": "Lifecycle API specification",
+      "note": "The official API docs define lifecycle states and create, inspect, delete, pause, resume, renew, endpoint, and snapshot operations.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/api/index.md"
+    },
+    {
+      "id": "execution-flow",
+      "status": "verified",
+      "label": "Command, file, and code execution flow",
+      "note": "The architecture document shows endpoint resolution, execd calls, in-sandbox execution, and SSE or WebSocket output.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md#72-command-file-and-code-execution"
+    },
+    {
+      "id": "execd-api",
+      "status": "verified",
+      "label": "execd API capabilities",
+      "note": "The official API docs list commands, sessions, files, directories, code contexts, metrics, SSE streaming, and access-token requirements.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/api/index.md#3-execd-apiyaml"
+    },
+    {
+      "id": "security-architecture",
+      "status": "verified",
+      "label": "Network and security plane",
+      "note": "The architecture documents endpoint access, resource limits, secure runtimes, ingress, egress, and credential controls as separate mechanisms.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md#6-networking-and-access"
+    },
+    {
+      "id": "secure-runtime-guide",
+      "status": "verified",
+      "label": "Secure runtime guide",
+      "note": "The official guide distinguishes standard runc from gVisor, Kata, and Firecracker-backed options and says secure runtime selection is server-level configuration.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/guides/secure-container.md"
+    },
+    {
+      "id": "egress-architecture",
+      "status": "verified",
+      "label": "Egress sidecar architecture",
+      "note": "The official architecture describes outbound network policy enforcement and runtime policy inspection through the egress sidecar.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md#54-egress-sidecar"
+    },
+    {
+      "id": "persistence-architecture",
+      "status": "verified",
+      "label": "Volumes, snapshots, and pause/resume",
+      "note": "The official architecture distinguishes runtime-neutral volume models from runtime-specific snapshot and pause/resume implementations.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/architecture/index.md#75-pause-resume-and-snapshots"
+    },
+    {
+      "id": "repo-examples",
+      "status": "verified",
+      "label": "Official example catalog",
+      "note": "The official repository documents coding agents, browser and desktop environments, code interpretation, evaluation, and training workloads.",
+      "url": "https://github.com/opensandbox-group/OpenSandbox/blob/main/docs/examples/index.md"
+    },
+    {
+      "id": "workshop-analogy",
+      "status": "analogy",
+      "label": "Managed workshop analogy",
+      "note": "A teaching metaphor for lifecycle orchestration and contained execution; it is not an implementation or security claim."
+    }
+  ],
+  "teachBack": [
+    {
+      "question": "Why is OpenSandbox more than a Docker wrapper?",
+      "options": [
+        "It defines common clients and APIs while delegating to Docker or Kubernetes backends",
+        "It replaces every container with the same virtual machine",
+        "It runs the AI model inside the lifecycle server"
+      ],
+      "correctIndex": 0,
+      "explanation": "The important split is contract and orchestration versus platform-specific execution. Docker is one backend, not the whole system."
+    },
+    {
+      "question": "Who actually runs python main.py inside the sandbox?",
+      "options": [
+        "The injected execd daemon starts it and streams the result",
+        "The public OpenAPI file executes it directly",
+        "The ingress gateway rewrites it into a container image"
+      ],
+      "correctIndex": 0,
+      "explanation": "The lifecycle plane creates and locates the sandbox; execd owns commands, files, sessions, code, and metrics inside it."
+    },
+    {
+      "question": "Why is enabling OpenSandbox not enough to guarantee strong isolation?",
+      "options": [
+        "Protection depends on the configured runtime, network, credentials, mounts, and limits",
+        "Every sandbox automatically uses a Firecracker microVM",
+        "Streaming stdout bypasses all runtime boundaries"
+      ],
+      "correctIndex": 0,
+      "explanation": "Security comes from a configured stack. Standard containers, gVisor, and VM-backed runtimes provide different boundaries, and policy choices still matter."
+    },
+    {
+      "question": "What should a client do after receiving a new sandbox ID?",
+      "options": [
+        "Poll state or use a readiness helper until Running or Failed",
+        "Assume the first command already finished",
+        "Delete the sandbox so execd can start"
+      ],
+      "correctIndex": 0,
+      "explanation": "Creation is asynchronous. An ID means the request exists, not necessarily that the workload is ready."
+    }
+  ]
+}

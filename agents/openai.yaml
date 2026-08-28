@@ -1,0 +1,4 @@
+interface:
+  display_name: "Miko Fireworks Explainer"
+  short_description: "Interactive cat-led visual concept explanations"
+  default_prompt: "Use $miko-fireworks-explainer to teach me a concept through a Koko-and-Michi interactive visual story."

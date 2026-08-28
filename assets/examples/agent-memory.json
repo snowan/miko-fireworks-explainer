@@ -1,0 +1,347 @@
+{
+  "version": 2,
+  "title": "How Agent Memory Works",
+  "summary": "Follow one small fact from Koko's chat into a later conversation—and see every gate in between.",
+  "audience": "curious beginner",
+  "style": "daily-chibi",
+  "traveler": {
+    "name": "salmon-fact",
+    "label": "Koko likes salmon treats"
+  },
+  "truthLadder": {
+    "analogy": "Agent memory is a tiny backpack of labeled cards, not a recording of every moment.",
+    "mechanism": "A memory system selects candidate facts, stores approved records with context, retrieves relevant matches, and places a few into a future prompt.",
+    "caveat": "Implementations differ. A recalled record may be stale, irrelevant, or wrong, so it should be checked and remain correctable."
+  },
+  "overview": {
+    "id": "memory-journey",
+    "title": "One fact's whole journey",
+    "caption": "The salmon fact moves through five distinct stages; click any stage to jump to Koko's question.",
+    "type": "flow",
+    "nodes": [
+      {"id": "stage-context", "sceneId": "working-context", "label": "Chat context", "detail": "The fact exists for this run"},
+      {"id": "stage-gate", "sceneId": "memory-gate", "label": "Memory gate", "detail": "Decide whether to save"},
+      {"id": "stage-store", "sceneId": "memory-store", "label": "Durable record", "detail": "Store fact plus provenance"},
+      {"id": "stage-recall", "sceneId": "recall", "label": "Retrieval", "detail": "Find a relevant match"},
+      {"id": "stage-use", "sceneId": "use-carefully", "label": "Checked use", "detail": "Validate before answering"}
+    ],
+    "edges": [
+      {"from": "stage-context", "to": "stage-gate", "label": "candidate"},
+      {"from": "stage-gate", "to": "stage-store", "label": "approved"},
+      {"from": "stage-store", "to": "stage-recall", "label": "search later"},
+      {"from": "stage-recall", "to": "stage-use", "label": "bring into context"}
+    ]
+  },
+  "scenes": [
+    {
+      "id": "working-context",
+      "title": "The temporary whiteboard",
+      "question": "Michi, why won't an agent remember every chat forever?",
+      "simpleAnswer": "A chat is like a whiteboard: useful now, but temporary unless something is saved.",
+      "technicalAnswer": "The active context carries current messages for this run. Durable memory is a separate write, not an automatic property of the conversation.",
+      "caveat": "Some products retain chat history, but history and actively retrieved agent memory are not the same thing.",
+      "takeaway": "Current context and durable memory are different stores.",
+      "visuals": [
+        {
+          "id": "chat-path",
+          "title": "What happens inside one run",
+          "caption": "The fact reaches temporary context, then disappears from active use unless another step writes it.",
+          "type": "flow",
+          "nodes": [
+            {"id": "koko", "label": "Koko says", "detail": "I like salmon treats"},
+            {"id": "context", "label": "Current context", "detail": "Temporary working space"},
+            {"id": "end", "label": "Run ends", "detail": "Context is no longer active"}
+          ],
+          "edges": [
+            {"from": "koko", "to": "context", "label": "message"},
+            {"from": "context", "to": "end", "label": "without a write"}
+          ],
+          "activeNodeIds": ["context"]
+        },
+        {
+          "id": "context-versus-memory",
+          "title": "Temporary context versus durable memory",
+          "caption": "These stores serve different jobs even when both contain the same words.",
+          "type": "comparison",
+          "comparisonDimension": "availability, persistence, and recall behavior",
+          "nodes": [
+            {"id": "temporary", "label": "Current context", "detail": "Available during this run"},
+            {"id": "durable", "label": "Durable memory", "detail": "Needs an explicit approved write"},
+            {"id": "history", "label": "Chat history", "detail": "A record is not automatically recalled"},
+            {"id": "retrieved", "label": "Retrieved memory", "detail": "Selected for a later request"}
+          ],
+          "edges": [],
+          "activeNodeIds": ["temporary", "durable"]
+        }
+      ],
+      "evidenceIds": ["architecture-model", "backpack-analogy"]
+    },
+    {
+      "id": "memory-gate",
+      "title": "The memory gate",
+      "question": "Then what decides whether my salmon fact gets saved?",
+      "simpleAnswer": "A gate checks whether the fact is useful, safe, and allowed to keep.",
+      "technicalAnswer": "A write policy can test relevance, sensitivity, user intent, duplication, and retention rules before persistence.",
+      "caveat": "A responsible gate rejects secrets and low-value noise; exact rules vary by system.",
+      "takeaway": "Selection happens before storage.",
+      "visuals": [
+        {
+          "id": "gate-decision",
+          "title": "The write decision",
+          "caption": "A candidate reaches durable storage only after the policy approves it.",
+          "type": "flow",
+          "nodes": [
+            {"id": "candidate", "label": "Candidate fact", "detail": "Koko likes salmon treats"},
+            {"id": "gate", "label": "Memory gate", "detail": "Useful? Safe? Allowed?"},
+            {"id": "store", "label": "Approved write", "detail": "Create a durable record"}
+          ],
+          "edges": [
+            {"from": "candidate", "to": "gate", "label": "evaluate"},
+            {"from": "gate", "to": "store", "label": "approved"}
+          ],
+          "activeNodeIds": ["gate"]
+        },
+        {
+          "id": "selection-funnel",
+          "title": "Many messages, very few memories",
+          "caption": "A selection funnel narrows chat content without pretending every message deserves persistence.",
+          "type": "funnel",
+          "nodes": [
+            {"id": "messages", "label": "Conversation messages", "detail": "Questions, jokes, facts, and noise"},
+            {"id": "candidates", "label": "Useful candidates", "detail": "Potentially helpful later"},
+            {"id": "allowed", "label": "Safe and allowed", "detail": "Pass privacy and user-intent checks"},
+            {"id": "record", "label": "Durable record", "detail": "One selected memory"}
+          ],
+          "edges": [
+            {"from": "messages", "to": "candidates", "label": "filter usefulness"},
+            {"from": "candidates", "to": "allowed", "label": "check safety"},
+            {"from": "allowed", "to": "record", "label": "write"}
+          ],
+          "activeNodeIds": ["allowed"]
+        }
+      ],
+      "evidenceIds": ["architecture-model"]
+    },
+    {
+      "id": "memory-store",
+      "title": "A labeled record",
+      "question": "Where does a safe memory sleep?",
+      "simpleAnswer": "It sleeps on a labeled card with the fact, its source, and when it was learned.",
+      "technicalAnswer": "The system persists a structured record and indexes useful fields or an embedding so later retrieval can find it.",
+      "caveat": "A store may be a file, database, vector index, or combination; the card is only an analogy.",
+      "takeaway": "Useful provenance travels with the remembered fact.",
+      "visuals": [
+        {
+          "id": "record-anatomy",
+          "title": "What a useful record carries",
+          "caption": "The remembered fact stays more trustworthy when source and time travel with it.",
+          "type": "layers",
+          "nodes": [
+            {"id": "fact", "label": "Fact", "detail": "Likes salmon treats"},
+            {"id": "source", "label": "Source + time", "detail": "Koko said it today"},
+            {"id": "index", "label": "Search index", "detail": "Find it by meaning or fields"},
+            {"id": "durable", "label": "Durable store", "detail": "Persists beyond this run"}
+          ],
+          "edges": [
+            {"from": "fact", "to": "source", "label": "ground"},
+            {"from": "source", "to": "index", "label": "index"},
+            {"from": "index", "to": "durable", "label": "persist"}
+          ],
+          "activeNodeIds": ["source", "durable"]
+        },
+        {
+          "id": "write-sequence",
+          "title": "Who talks to whom during a write",
+          "caption": "The write crosses a policy boundary before the index and durable store accept it.",
+          "type": "sequence",
+          "nodes": [
+            {"id": "agent", "label": "Agent", "detail": "Proposes a candidate"},
+            {"id": "policy", "label": "Memory policy", "detail": "Approves or rejects"},
+            {"id": "index", "label": "Index", "detail": "Makes it findable"},
+            {"id": "store", "label": "Store", "detail": "Persists the record"}
+          ],
+          "edges": [
+            {"from": "agent", "to": "policy", "label": "propose"},
+            {"from": "policy", "to": "index", "label": "approved record"},
+            {"from": "index", "to": "store", "label": "persist"}
+          ],
+          "activeNodeIds": ["policy"]
+        },
+        {
+          "id": "memory-lifetime",
+          "title": "The memory's lifetime",
+          "caption": "A durable record still changes meaning over time and must be checked when recalled.",
+          "type": "timeline",
+          "nodes": [
+            {"id": "said", "label": "Koko says it", "detail": "Candidate enters context"},
+            {"id": "written", "label": "Record written", "detail": "Source and time attached"},
+            {"id": "later", "label": "Later request", "detail": "The record may have aged"},
+            {"id": "checked", "label": "Freshness checked", "detail": "Use, ask, update, or delete"}
+          ],
+          "edges": [
+            {"from": "said", "to": "written", "label": "approve"},
+            {"from": "written", "to": "later", "label": "time passes"},
+            {"from": "later", "to": "checked", "label": "retrieve"}
+          ],
+          "activeNodeIds": ["written"]
+        }
+      ],
+      "evidenceIds": ["architecture-model", "backpack-analogy"]
+    },
+    {
+      "id": "recall",
+      "title": "Finding the right card",
+      "question": "How does a new agent find that fact later?",
+      "simpleAnswer": "It searches for cards related to the new question and brings back only the best matches.",
+      "technicalAnswer": "A retriever converts the new request into search criteria, ranks candidate records, and injects a limited relevant subset into the active context.",
+      "caveat": "Retrieval can miss a useful record or return a misleading one, especially when wording or context changes.",
+      "takeaway": "Recall is a search step, not magic awareness.",
+      "visuals": [
+        {
+          "id": "retrieval-graph",
+          "title": "Search, rank, and select",
+          "caption": "The new question connects to several records, but only the strongest useful match enters context.",
+          "type": "graph",
+          "nodes": [
+            {"id": "question", "label": "New question", "detail": "What snack should Koko get?"},
+            {"id": "search", "label": "Retriever", "detail": "Search related records"},
+            {"id": "salmon", "label": "Salmon fact", "detail": "High relevance"},
+            {"id": "weather", "label": "Weather fact", "detail": "Low relevance"},
+            {"id": "context", "label": "New context", "detail": "Use the best match"}
+          ],
+          "edges": [
+            {"from": "question", "to": "search", "label": "query"},
+            {"from": "search", "to": "salmon", "label": "strong match"},
+            {"from": "search", "to": "weather", "label": "weak match"},
+            {"from": "salmon", "to": "context", "label": "retrieve"}
+          ],
+          "activeNodeIds": ["search", "salmon"]
+        },
+        {
+          "id": "illustrative-ranking",
+          "title": "Why the salmon fact wins",
+          "caption": "Illustrative bars make ranking visible without claiming these are measurements from a real product.",
+          "type": "bar",
+          "dataStatus": "illustrative",
+          "chartNote": "Teaching-only relevance scores; actual retrieval models and score scales differ.",
+          "evidenceIds": ["match-score-analogy"],
+          "nodes": [
+            {"id": "salmon-score", "label": "Salmon preference", "detail": "Directly answers the snack question", "value": 92},
+            {"id": "weather-score", "label": "Weather note", "detail": "Shares little meaning", "value": 18},
+            {"id": "random-score", "label": "Random detail", "detail": "Not useful for this request", "value": 6}
+          ],
+          "edges": [],
+          "activeNodeIds": ["salmon-score"]
+        }
+      ],
+      "evidenceIds": ["architecture-model"]
+    },
+    {
+      "id": "use-carefully",
+      "title": "Memory is a clue",
+      "question": "Does a recalled memory become automatically true?",
+      "simpleAnswer": "No. Michi treats memory as a useful clue and checks whether it still fits.",
+      "technicalAnswer": "The agent should evaluate relevance, freshness, provenance, and conflicts before relying on a retrieved record, while allowing correction or deletion.",
+      "caveat": "A fluent answer can still misuse a correct record, so retrieval quality alone does not guarantee answer quality.",
+      "takeaway": "Retrieve, check, then use—or ask.",
+      "visuals": [
+        {
+          "id": "freshness-branch",
+          "title": "Check before use",
+          "caption": "Confidence sends the answer down one branch; uncertainty sends a question back to Koko.",
+          "type": "flow",
+          "nodes": [
+            {"id": "record", "label": "Recalled record", "detail": "Koko likes salmon treats"},
+            {"id": "check", "label": "Freshness check", "detail": "Still relevant and supported?"},
+            {"id": "answer", "label": "Use carefully", "detail": "Suggest salmon, with context"},
+            {"id": "ask", "label": "Ask Koko", "detail": "When confidence is low"}
+          ],
+          "edges": [
+            {"from": "record", "to": "check", "label": "validate"},
+            {"from": "check", "to": "answer", "label": "confident"},
+            {"from": "check", "to": "ask", "label": "uncertain"}
+          ],
+          "activeNodeIds": ["check"]
+        },
+        {
+          "id": "correction-loop",
+          "title": "Memory stays correctable",
+          "caption": "A later answer can produce feedback that updates or removes the old record before the next retrieval.",
+          "type": "cycle",
+          "nodes": [
+            {"id": "use", "label": "Use memory", "detail": "Answer with context"},
+            {"id": "feedback", "label": "Koko responds", "detail": "Correct, change, or reject"},
+            {"id": "repair", "label": "Repair record", "detail": "Update or delete"},
+            {"id": "retrieve", "label": "Next retrieval", "detail": "Use the corrected state"}
+          ],
+          "edges": [
+            {"from": "use", "to": "feedback", "label": "observe"},
+            {"from": "feedback", "to": "repair", "label": "correct"},
+            {"from": "repair", "to": "retrieve", "label": "persist"},
+            {"from": "retrieve", "to": "use", "label": "bring back"}
+          ],
+          "activeNodeIds": ["feedback", "repair"]
+        }
+      ],
+      "evidenceIds": ["architecture-model"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "architecture-model",
+      "status": "inferred",
+      "label": "Generic write-and-retrieve architecture",
+      "note": "A system-design model synthesized for teaching; exact agent-memory products differ."
+    },
+    {
+      "id": "backpack-analogy",
+      "status": "analogy",
+      "label": "Backpack of labeled cards",
+      "note": "A teaching metaphor for selective durable memory, not an implementation claim."
+    },
+    {
+      "id": "match-score-analogy",
+      "status": "analogy",
+      "label": "Illustrative retrieval scores",
+      "note": "Teaching-only values make ranking visible; they are not measurements from an agent-memory product."
+    },
+    {
+      "id": "character-contract",
+      "status": "verified",
+      "label": "Michi and Koko identities",
+      "note": "User supplied: Michi is the calico sensei and Koko is the brown tabby student."
+    }
+  ],
+  "teachBack": [
+    {
+      "question": "What turns a temporary chat detail into durable memory?",
+      "options": [
+        "An approved write after the memory gate",
+        "The chat simply being long enough",
+        "The agent sounding confident"
+      ],
+      "correctIndex": 0,
+      "explanation": "Durability requires a separate write. Length and confidence do not create persistent memory."
+    },
+    {
+      "question": "Why does retrieval rank candidate memories?",
+      "options": [
+        "To bring only the most relevant records into limited context",
+        "To permanently delete every weak match",
+        "To prove that every stored fact is current"
+      ],
+      "correctIndex": 0,
+      "explanation": "Ranking selects useful context for this request; it neither deletes weak matches nor proves freshness."
+    },
+    {
+      "question": "What should happen when a recalled record may be stale?",
+      "options": [
+        "Check it or ask the user before relying on it",
+        "Treat it as true because it was stored",
+        "Hide it and invent a replacement"
+      ],
+      "correctIndex": 0,
+      "explanation": "Memory is evidence to evaluate, not automatic truth. Uncertainty should be visible and correctable."
+    }
+  ]
+}
