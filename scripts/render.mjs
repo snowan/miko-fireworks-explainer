@@ -1224,7 +1224,7 @@ function clientRuntime() {
   }
 
   function announce(scene, visual, visualCount) {
-    elements.live.textContent = "Scene " + (state.scene + 1) + ", view " + (state.visual + 1) + " of " + visualCount + ": " + visual.title + ". Koko asks, " + scene.question + " Michi answers, " + answerFor(scene);
+    elements.live.textContent = "Scene " + (state.scene + 1) + ", view " + (state.visual + 1) + " of " + visualCount + ": " + visual.title + ". Question: " + scene.question + " Answer: " + answerFor(scene);
   }
 
   function viewOrdinal() {
@@ -1543,10 +1543,10 @@ const CSS = String.raw`
     justify-content: space-between;
     gap: 16px;
   }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; letter-spacing: -0.02em; }
+  .brand { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 0.88rem; font-weight: 850; letter-spacing: -0.01em; }
   .brand-mark {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     display: grid;
     place-items: center;
     border: 2px solid var(--ink);
@@ -1555,7 +1555,7 @@ const CSS = String.raw`
     box-shadow: 3px 3px 0 var(--ink);
   }
   .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-  .style-chip, .meta-chip {
+  .meta-chip {
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -1568,7 +1568,6 @@ const CSS = String.raw`
     font-size: 0.82rem;
     font-weight: 750;
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
   .ghost-button {
     min-height: 38px;
     padding: 8px 14px;
@@ -1581,28 +1580,24 @@ const CSS = String.raw`
 
   .hero {
     width: min(1180px, calc(100% - 32px));
-    margin: 24px auto 34px;
-  }
-  .eyebrow {
-    margin: 0 0 12px;
-    color: var(--accent);
-    font-size: 0.78rem;
-    font-weight: 900;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
+    margin: 28px auto 34px;
   }
   h1 {
-    max-width: 760px;
+    max-width: 900px;
     margin: 0;
-    font-size: clamp(2.7rem, 6vw, 5.6rem);
-    line-height: 0.98;
-    letter-spacing: -0.065em;
+    font-size: clamp(2.2rem, 4.2vw, 4rem);
+    line-height: 1.04;
+    letter-spacing: -0.045em;
   }
-  .hero-summary { max-width: 700px; margin: 22px 0 20px; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.28rem); }
-  .hero-meta { display: flex; flex-wrap: wrap; gap: 9px; }
+  .source-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 14px 0 0; color: var(--muted); font-size: 0.9rem; }
+  .source-label { color: var(--ink); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.09em; text-transform: uppercase; }
+  .source-line a { color: var(--accent-2); font-weight: 850; text-underline-offset: 3px; }
+  .source-byline { color: var(--muted); }
+  .core-summary { max-width: 820px; margin: 22px 0 0; padding: 18px 20px; border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--surface) 76%, transparent); }
+  .core-summary-label { margin: 0; color: var(--accent); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+  .hero-summary { margin: 6px 0 0; color: var(--ink); font-size: clamp(1rem, 1.6vw, 1.18rem); line-height: 1.65; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
   .traveler-chip { color: var(--ink); background: color-mix(in srgb, var(--highlight) 42%, var(--surface)); }
-  .role-note { max-width: 690px; margin: 20px 0 0; font-size: 0.9rem; color: var(--muted); }
-  .role-note strong { color: var(--ink); }
 
   main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
   .journey-overview { margin: 10px 0 34px; }
@@ -1887,7 +1882,7 @@ const CSS = String.raw`
   @media (max-width: 620px) {
     .topbar { align-items: flex-start; }
     .brand span:last-child { display: none; }
-    h1 { font-size: clamp(2.6rem, 15vw, 4.2rem); }
+    h1 { font-size: clamp(1.75rem, 10vw, 2.8rem); }
     .hero { margin-top: 18px; }
     .scene-nav { grid-template-columns: 1fr; }
     .lesson-inner { padding: 20px 14px; }
@@ -1937,10 +1932,12 @@ export async function renderLesson(spec, options = {}) {
   const summary = escapeHtml(spec.summary);
   const audience = escapeHtml(spec.audience || "curious beginner");
   const traveler = escapeHtml(spec.traveler.label);
-  const styleLabel = escapeHtml(config.label);
   const overviewTitle = escapeHtml(spec.overview?.title || "The whole journey");
   const overviewCaption = escapeHtml(spec.overview?.caption || "Choose any stage to jump into the lesson.");
   const viewCount = spec.scenes.reduce((sum, scene) => sum + (Array.isArray(scene.visuals) ? scene.visuals.length : 1), 0);
+  const sourceHtml = spec.source
+    ? `      <p class="source-line"><span class="source-label">Original source</span><a href="${escapeHtml(spec.source.url)}" target="_blank" rel="noreferrer noopener">${escapeHtml(spec.source.title)}</a>${spec.source.byline ? `<span class="source-byline">by ${escapeHtml(spec.source.byline)}</span>` : ""}</p>\n`
+    : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -1949,7 +1946,7 @@ export async function renderLesson(spec, options = {}) {
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="${config.paper}">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'">
-  <title>${title} · Miko Fireworks Explainer</title>
+  <title>${title} · Visual explainer</title>
   <style>
     :root {
       --paper: ${config.paper};
@@ -1964,7 +1961,7 @@ export async function renderLesson(spec, options = {}) {
       --koko-portrait-size: ${kokoPortrait.size};
       --koko-portrait-position: ${kokoPortrait.position};
     }
-    ${CSS}
+${CSS}
   </style>
 </head>
 <body data-miko-fireworks="1" data-style="${escapeHtml(spec.style)}">
@@ -1972,24 +1969,24 @@ export async function renderLesson(spec, options = {}) {
   <div id="lesson-live" class="sr-only" aria-live="polite"></div>
 
   <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">M×K</span><span>Miko Fireworks Explainer</span></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">M×K</span><span>Visual explainer</span></div>
     <div class="top-actions">
-      <span class="style-chip"><span class="dot" aria-hidden="true"></span>${styleLabel}</span>
       <button id="print-lesson" class="ghost-button" type="button">Print / save PDF</button>
     </div>
   </header>
 
   <section class="hero" aria-labelledby="page-title">
     <div>
-      <p class="eyebrow">Koko asks · Michi draws · You teach it back</p>
       <h1 id="page-title">${title}</h1>
-      <p class="hero-summary">${summary}</p>
-      <div class="hero-meta">
-        <span class="meta-chip">For: ${audience}</span>
-        <span class="meta-chip traveler-chip">Follow one thing: ${traveler}</span>
-        <span class="meta-chip">${spec.scenes.length} questions · ${viewCount} views</span>
+${sourceHtml}      <div class="core-summary">
+        <p class="core-summary-label">Core idea</p>
+        <p class="hero-summary">${summary}</p>
       </div>
-      <p class="role-note"><strong>Koko</strong>, the brown tabby student, asks the honest questions. <strong>Michi</strong>, the calico sensei, answers with a picture first and the real mechanism one tap later.</p>
+      <div class="hero-meta">
+        <span class="meta-chip">${audience}</span>
+        <span class="meta-chip traveler-chip">Worked example: ${traveler}</span>
+        <span class="meta-chip">${spec.scenes.length} core questions · ${viewCount} diagrams</span>
+      </div>
     </div>
   </section>
 
@@ -2007,10 +2004,10 @@ export async function renderLesson(spec, options = {}) {
       </div>
     </section>
 
-    <section class="lesson-grid" aria-label="Interactive Michi and Koko lesson">
+    <section class="lesson-grid" aria-label="Interactive concept lesson">
       <aside class="question-rail" aria-labelledby="questions-title">
         <p class="section-kicker">Choose a question</p>
-        <h2 id="questions-title">Koko's curiosity trail</h2>
+        <h2 id="questions-title">Questions this explains</h2>
         <nav id="scene-nav" class="scene-nav" aria-label="Lesson questions"></nav>
         <p class="rail-note">Playback advances through each view every 7 seconds. Use Pause to inspect a route or chart. Keyboard: ← → questions, Space pause/play.</p>
       </aside>
@@ -2089,8 +2086,8 @@ export async function renderLesson(spec, options = {}) {
 
     <section id="teach-back" class="content-section" aria-labelledby="teach-back-title">
       <div class="section-heading">
-        <div><p class="section-kicker">Koko hands you the chalk</p><h2 id="teach-back-title" tabindex="-1">Can you teach it back?</h2></div>
-        <p>Pick an answer, then use Michi's feedback to repair the causal model—not just memorize a word.</p>
+        <div><p class="section-kicker">Check your understanding</p><h2 id="teach-back-title" tabindex="-1">Can you explain the mechanism?</h2></div>
+        <p>Pick an answer, then use the explanation to repair the causal model—not just memorize a word.</p>
       </div>
       <div class="quiz-shell">
         <div class="quiz-toolbar"><span id="quiz-score" class="quiz-score">Not started</span><button id="reset-quiz" class="ghost-button" type="button">Reset answers</button></div>
@@ -2108,7 +2105,7 @@ export async function renderLesson(spec, options = {}) {
     </section>
   </main>
 
-  <footer><span>Michi is the calico sensei · Koko is the brown tabby student</span><span>Self-contained offline lesson · no runtime network request</span></footer>
+  <footer><span>Source-grounded visual lesson</span><span>Self-contained offline artifact · no runtime network request</span></footer>
   <noscript><p>This lesson needs JavaScript for scene controls and diagrams. Enable JavaScript, or print the truth ladder above.</p></noscript>
   <script id="character-art-data" type="application/octet-stream">${characterArtData}</script>
   <script id="lesson-data" type="application/json">${safeJson(spec)}</script>

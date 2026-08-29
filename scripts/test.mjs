@@ -76,7 +76,31 @@ test("the OpenSandbox regression lesson has explicit routes in every mechanism v
 
   const html = await renderLesson(opensandbox);
   assert.deepEqual(checkHtml(html).errors, []);
+  assert.match(html, /<span class="source-label">Original source<\/span>/u);
+  assert.match(html, /href="https:\/\/github\.com\/opensandbox-group\/OpenSandbox"/u);
   assert.doesNotMatch(html, /arrows show cause or movement/iu);
+});
+
+test("source-led lessons validate and show the original work directly below the topic", async function () {
+  const sourced = structuredClone(example);
+  sourced.source = {
+    title: "Agent memory architecture notes",
+    url: "https://example.com/agent-memory",
+    byline: "Example author",
+  };
+  const validation = validateSpec(sourced);
+  assert.deepEqual(validation.errors, []);
+
+  const html = await renderLesson(sourced);
+  assert.match(html, /<h1 id="page-title">How Agent Memory Works<\/h1>/u);
+  assert.match(html, /<span class="source-label">Original source<\/span>/u);
+  assert.match(html, /Agent memory architecture notes/u);
+  assert.match(html, /<p class="core-summary-label">Core idea<\/p>/u);
+  assert.doesNotMatch(html, /Koko asks · Michi draws/u);
+
+  sourced.source.url = "file:///tmp/not-a-public-source";
+  const invalid = validateSpec(sourced);
+  assert.ok(invalid.errors.some((item) => item.path === "source.url"));
 });
 
 test("charts must disclose whether numbers are verified or illustrative", function () {
@@ -129,6 +153,11 @@ test("rendering is deterministic and produces a complete offline artifact", asyn
   assert.match(first, /mobile-transition-list/u);
   assert.match(first, /animateMotion/u);
   assert.match(first, /Illustrative data/u);
+  assert.match(first, /font-size: clamp\(2\.2rem, 4\.2vw, 4rem\)/u);
+  assert.match(first, /font-size: clamp\(1\.75rem, 10vw, 2\.8rem\)/u);
+  assert.doesNotMatch(first, /[\t ]+$/mu);
+  assert.doesNotMatch(first, /Miko Fireworks Explainer<\/span>/u);
+  assert.doesNotMatch(first, /class="role-note"/u);
   assert.doesNotMatch(first, /arrows show cause or movement/iu);
   assert.doesNotMatch(first, /<script\b[^>]*\bsrc=/iu);
   assert.doesNotMatch(first, /<link\b[^>]*\bhref=/iu);
@@ -181,6 +210,11 @@ test("the artifact checker rejects a learner-facing character selection panel", 
 test("learner content cannot break out of HTML or JSON containers", async function () {
   const hostile = structuredClone(example);
   hostile.title = "Memory </title><script>alert('cat')</script> lesson";
+  hostile.source = {
+    title: "Source </a><script>alert('source')</script>",
+    url: "https://example.com/?q=\"bad\"",
+    byline: "Author <img src=x>",
+  };
   hostile.scenes[0].question = "Can </script><img src=x onerror=alert(1)> escape?";
 
   const html = await renderLesson(hostile);
@@ -189,5 +223,7 @@ test("learner content cannot break out of HTML or JSON containers", async functi
   assert.doesNotMatch(html, /<script>alert\('cat'\)<\/script>/u);
   assert.doesNotMatch(html, /<img src=x onerror=/u);
   assert.match(html, /Memory &lt;\/title&gt;&lt;script&gt;/u);
+  assert.match(html, /Source &lt;\/a&gt;&lt;script&gt;/u);
+  assert.doesNotMatch(html, /<script>alert\('source'\)<\/script>/u);
   assert.match(html, /\\u003c\/script\\u003e/u);
 });

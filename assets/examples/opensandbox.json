@@ -2,6 +2,11 @@
   "version": 2,
   "title": "OpenSandbox: Give an AI Agent a Safe Workshop",
   "summary": "Follow one request to run python main.py from an agent, through OpenSandbox, into an isolated runtime, and back as streamed output.",
+  "source": {
+    "title": "OpenSandbox",
+    "url": "https://github.com/opensandbox-group/OpenSandbox",
+    "byline": "OpenSandbox contributors"
+  },
   "audience": "curious developer who is new to sandbox infrastructure",
   "style": "minimal",
   "traveler": {
