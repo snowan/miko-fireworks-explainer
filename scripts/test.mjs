@@ -135,6 +135,10 @@ test("rendering is deterministic and produces a complete offline artifact", asyn
   assert.match(first, /id="character-art-data"/u);
   assert.match(first, /--michi-portrait-size: [\d.]+% auto/u);
   assert.match(first, /--koko-portrait-size: [\d.]+% auto/u);
+  assert.match(first, /--brand-portrait-size: [\d.]+% auto/u);
+  assert.match(first, /class="brand-mark" role="img" aria-label="Michi, a calico cat, and Koko, a brown tabby cat together"/u);
+  assert.doesNotMatch(first, />M×K</u);
+  assert.match(first, /background-image: var\(--character-art\)/u);
   assert.doesNotMatch(first, /<figure class="board-figure"/u);
   assert.doesNotMatch(first, /Selected from the supplied Michi/u);
   assert.doesNotMatch(first, /--portrait-size: 820px/u);
@@ -180,7 +184,7 @@ test("version 1 lessons remain renderable through the compatibility adapter", as
 
 test("all four supplied Michi and Koko visual styles render", async function () {
   for (const style of Object.keys(STYLE_CONFIG)) {
-    for (const key of ["michiPortrait", "kokoPortrait"]) {
+    for (const key of ["michiPortrait", "kokoPortrait", "brandPortrait"]) {
       const crop = STYLE_CONFIG[style][key];
       assert.ok(crop.x >= 0 && crop.y >= 0 && crop.size > 0, `${style} ${key}`);
       assert.ok(crop.x + crop.size <= 1024, `${style} ${key} width`);
@@ -194,6 +198,7 @@ test("all four supplied Michi and Koko visual styles render", async function () 
     assert.match(html, new RegExp(`data-style="${style}"`, "u"));
     assert.match(html, /--michi-portrait-position: [\d.]+% [\d.]+%/u);
     assert.match(html, /--koko-portrait-position: [\d.]+% [\d.]+%/u);
+    assert.match(html, /--brand-portrait-position: [\d.]+% [\d.]+%/u);
   }
 });
 

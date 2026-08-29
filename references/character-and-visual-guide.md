@@ -26,6 +26,8 @@ The boards are style references supplied by the user. They remain internal sourc
 
 Each dialogue avatar frames one complete character illustration from the selected board. Keep the whole chosen Michi or Koko silhouette visible—including the ears, face, and lower edge of that illustration—instead of zooming into a facial fragment. Use percentage-based framing so the same composition survives the 76px desktop and 56px mobile avatar sizes. The original files remain unchanged.
 
+The masthead mark frames one existing composition where Michi and Koko appear together. Use the paired crop configured for the active style, keep both faces visible at small sizes, and identify both cats in the accessible label. Do not replace the pair with initials or add a separate logo asset when the selected board already contains an appropriate composition.
+
 | Style ID | Asset | Best use |
 | --- | --- | --- |
 | `minimal` | `assets/characters/minimal.png` | Crisp diagrams, architecture, comparisons |
