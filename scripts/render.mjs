@@ -20,6 +20,7 @@ export const STYLE_CONFIG = Object.freeze({
     highlight: "#f3c75d",
     michiPortrait: { x: 30, y: 25, size: 255 },
     kokoPortrait: { x: 290, y: 25, size: 255 },
+    brandPortrait: { x: 510, y: 35, size: 285 },
   },
   "daily-chibi": {
     label: "Everyday chibi",
@@ -33,6 +34,7 @@ export const STYLE_CONFIG = Object.freeze({
     highlight: "#f2c85c",
     michiPortrait: { x: 20, y: 20, size: 270 },
     kokoPortrait: { x: 285, y: 25, size: 285 },
+    brandPortrait: { x: 755, y: 30, size: 269 },
   },
   "retro-manga": {
     label: "Retro manga",
@@ -46,6 +48,7 @@ export const STYLE_CONFIG = Object.freeze({
     highlight: "#f2c540",
     michiPortrait: { x: 15, y: 20, size: 250 },
     kokoPortrait: { x: 215, y: 20, size: 250 },
+    brandPortrait: { x: 20, y: 605, size: 300 },
   },
   "magical-festival": {
     label: "Magical festival",
@@ -59,6 +62,7 @@ export const STYLE_CONFIG = Object.freeze({
     highlight: "#f4bd4c",
     michiPortrait: { x: 0, y: 10, size: 320 },
     kokoPortrait: { x: 290, y: 10, size: 310 },
+    brandPortrait: { x: 690, y: 1245, size: 290 },
   },
 });
 
@@ -1545,13 +1549,17 @@ const CSS = String.raw`
   }
   .brand { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 0.88rem; font-weight: 850; letter-spacing: -0.01em; }
   .brand-mark {
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    overflow: hidden;
     border: 2px solid var(--ink);
-    border-radius: 13px;
-    background: var(--highlight);
+    border-radius: 16px;
+    background-color: white;
+    background-image: var(--character-art);
+    background-repeat: no-repeat;
+    background-size: var(--brand-portrait-size);
+    background-position: var(--brand-portrait-position);
     box-shadow: 3px 3px 0 var(--ink);
   }
   .top-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
@@ -1882,6 +1890,7 @@ const CSS = String.raw`
   @media (max-width: 620px) {
     .topbar { align-items: flex-start; }
     .brand span:last-child { display: none; }
+    .brand-mark { width: 42px; height: 42px; border-radius: 15px; }
     h1 { font-size: clamp(1.75rem, 10vw, 2.8rem); }
     .hero { margin-top: 18px; }
     .scene-nav { grid-template-columns: 1fr; }
@@ -1928,6 +1937,7 @@ export async function renderLesson(spec, options = {}) {
   const characterArtData = await imageDataUri(spec.style, options.assetRoot);
   const michiPortrait = portraitCss(config.michiPortrait);
   const kokoPortrait = portraitCss(config.kokoPortrait);
+  const brandPortrait = portraitCss(config.brandPortrait);
   const title = escapeHtml(spec.title);
   const summary = escapeHtml(spec.summary);
   const audience = escapeHtml(spec.audience || "curious beginner");
@@ -1960,6 +1970,8 @@ export async function renderLesson(spec, options = {}) {
       --michi-portrait-position: ${michiPortrait.position};
       --koko-portrait-size: ${kokoPortrait.size};
       --koko-portrait-position: ${kokoPortrait.position};
+      --brand-portrait-size: ${brandPortrait.size};
+      --brand-portrait-position: ${brandPortrait.position};
     }
 ${CSS}
   </style>
@@ -1969,7 +1981,7 @@ ${CSS}
   <div id="lesson-live" class="sr-only" aria-live="polite"></div>
 
   <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">M×K</span><span>Visual explainer</span></div>
+    <div class="brand"><span class="brand-mark" role="img" aria-label="Michi, a calico cat, and Koko, a brown tabby cat together"></span><span>Visual explainer</span></div>
     <div class="top-actions">
       <button id="print-lesson" class="ghost-button" type="button">Print / save PDF</button>
     </div>
