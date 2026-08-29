@@ -7,8 +7,9 @@ The renderer accepts one UTF-8 JSON object. Use version 2 for new lessons. Versi
 | Field | Type | Requirement |
 | --- | --- | --- |
 | `version` | number | Use `2` for a new lesson |
-| `title` | string | 3–120 characters |
-| `summary` | string | One concise learner-facing promise |
+| `title` | string | Plain-language topic name, 3–120 characters; normally 3–8 words |
+| `summary` | string | One to three concise sentences explaining the core topic itself |
+| `source` | object | Optional original source with `title`, absolute HTTP(S) `url`, and optional `byline` |
 | `audience` | string | Optional; defaults to `curious beginner` |
 | `style` | string | `minimal`, `daily-chibi`, `retro-manga`, or `magical-festival` |
 | `traveler` | object | `name` is a short ID; `label` is learner-facing |
@@ -17,6 +18,22 @@ The renderer accepts one UTF-8 JSON object. Use version 2 for new lessons. Versi
 | `scenes` | array | 3–7 scene objects |
 | `evidence` | array | Evidence objects; may be empty only when `fictional` is `true` |
 | `teachBack` | array | 2–4 question objects |
+
+For a source-led lesson, make the opening factual and direct:
+
+```json
+{
+  "title": "How Large Language Models Work",
+  "summary": "A large language model turns text into numbers, connects context with attention, and predicts one token at a time. Training changes its weights; inference uses them.",
+  "source": {
+    "title": "Holding the LLM Stack in Your Head",
+    "url": "https://thegustafson.com/series",
+    "byline": "Nick Gustafson"
+  }
+}
+```
+
+The title names the topic. The summary explains the topic, not the lesson format or its characters. Omit `source` for a lesson that is not based on one identifiable original work.
 
 ## Whole-journey overview
 

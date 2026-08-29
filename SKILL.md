@@ -4,12 +4,19 @@ description: Create interactive, self-contained visual explainers led by Michi, 
 license: MIT
 metadata:
   author: snowan
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Miko Fireworks Explainer
 
-Teach one concept as a short conversation: Koko asks the questions a smart beginner would ask, and Michi answers with a clean primary diagram plus optional supporting views. Keep the whole-journey map compact so it orients the learner without competing with the lesson.
+Teach one concept directly. The page opens with the topic, its original source when the request is source-led, and a concise explanation of the core idea. Koko and Michi guide the lesson itself without turning the opening into an introduction to the explainer format. Keep the whole-journey map compact so it orients the learner without competing with the lesson.
+
+## Lead with the subject
+
+- Make the page title the topic in plain language, normally 3–8 words. Move the worked example, audience, and lesson format into the summary or metadata instead of stacking them into the title.
+- Write the summary as a compact explanation of the topic itself: what it does, the main mechanism, and the most important boundary. Do not describe how Koko asks, Michi teaches, the artifact was generated, or how many interactions it contains.
+- When the request starts from an article, blog post or series, paper, video, or other URL, add `source.title`, `source.url`, and an optional `source.byline`. The renderer places this original-source link directly below the title.
+- Keep cast names, style names, view counts, and production notes out of the hero. The characters may remain inside the lesson as speaker labels and portraits.
 
 ## Preserve the cast
 

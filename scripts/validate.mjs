@@ -355,6 +355,19 @@ export function validateSpec(spec) {
   if (spec.audience !== undefined) {
     validateText(errors, spec.audience, "audience", { maximum: 100, label: "an audience description" });
   }
+  if (spec.source !== undefined) {
+    if (!isObject(spec.source)) {
+      errors.push(issue("source", "Expected an original-source object.", "Add source.title, source.url, and optional source.byline, or remove source for a lesson without one identifiable original work."));
+    } else {
+      validateText(errors, spec.source.title, "source.title", { minimum: 2, maximum: 180, label: "an original source title" });
+      if (typeof spec.source.url !== "string" || !/^https?:\/\//iu.test(spec.source.url)) {
+        errors.push(issue("source.url", "Expected an absolute HTTP or HTTPS URL.", "Link directly to the original article, blog, paper, video, or source collection."));
+      }
+      if (spec.source.byline !== undefined) {
+        validateText(errors, spec.source.byline, "source.byline", { minimum: 2, maximum: 120, label: "an original source byline" });
+      }
+    }
+  }
   if (!STYLE_IDS.includes(spec.style)) {
     errors.push(issue("style", `Unknown style \"${String(spec.style)}\".`, `Use one of: ${STYLE_IDS.join(", ")}.`));
   }

@@ -4,6 +4,8 @@ An Agent Skill for building grounded, self-contained visual lessons with Michi, 
 
 The skill turns a topic into a validated JSON lesson and one offline HTML artifact with a whole-journey map, explicit flows and branches, view-specific reading guidance, evidence states, controls, and teach-back questions. It includes deterministic Node.js tooling and makes no runtime network requests.
 
+Generated lessons open with a compact, plain-language topic title, an original-source link when the request is based on an article or other source, and a summary of the core concept. Character framing begins inside the lesson rather than competing with the subject in the hero.
+
 ## Requirements
 
 - Claude Code, Codex, or Cursor with Agent Skills support
