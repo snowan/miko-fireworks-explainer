@@ -6,6 +6,21 @@ The skill turns a topic into a validated JSON lesson and one offline HTML artifa
 
 Generated lessons open with a compact, plain-language topic title, an original-source link when the request is based on an article or other source, and a summary of the core concept. Character framing begins inside the lesson rather than competing with the subject in the hero.
 
+## See it in action
+
+This example turns Nick Gustafson's [Holding the LLM Stack in Your Head](https://thegustafson.com/series) into a source-led beginner lesson. One concrete Moon fact stays visible while the learner moves from text and vectors to attention, training, generation, and optional tool use.
+
+![Animated walkthrough selecting the attention question, changing from a relationship graph to the Q, K, V flow, and opening the real-mechanism explanation](assets/demo/gustafson-interaction.gif)
+
+The controls switch questions, diagram views, and explanation depth while preserving the selected example and its causal route.
+
+<p align="center">
+  <img src="assets/demo/gustafson-overview.webp" alt="Desktop explainer overview showing the topic title, original source, core idea, beginner audience, worked Moon fact, and seven-stage journey" width="680">
+  <img src="assets/demo/gustafson-mobile.webp" alt="Mobile explainer overview showing the same topic, source, core idea, and worked example in a responsive layout" width="220">
+</p>
+
+The desktop overview leads with the topic, source, and core idea. The same self-contained HTML reflows at 390 pixels without dropping the teaching context.
+
 ## Requirements
 
 - Claude Code, Codex, or Cursor with Agent Skills support
@@ -76,6 +91,7 @@ The OpenSandbox example is a regression fixture for return-path direction, expli
 - `scripts/check-html.mjs` — artifact contract checks
 - `scripts/test.mjs` — regression suite
 - `references/` — progressively loaded authoring and QA guidance
+- `assets/demo/` — README screenshots and interaction walkthrough
 - `assets/examples/` — validated lesson fixtures
 - `assets/characters/` — bundled dialogue art
 - `agents/openai.yaml` — optional Codex UI metadata
